@@ -3,12 +3,27 @@ from cowsay import cowsay
 import sys
 
 
+def cow_modes():
+    modes = {'b': 'Borg',
+             'd': 'dead',
+             'g': 'greedy',
+             'p': 'paranoia',
+             's': 'stoned',
+             't': 'tired',
+             'w': 'wired',
+             'y': 'youthful'
+    }
+    return modes
+
+
 def emulate_cow(args):
+    if args.mode is not None:
+        args.mode = ''.join(args.mode)
     print(
         cowsay(
             message=args.message,
             cow=args.f,
-            preset=None,
+            preset=args.mode,
             eyes=args.e,
             tongue=args.T,
             width=args.W,
@@ -29,6 +44,10 @@ if __name__ == '__main__':
     parser.add_argument('-T', type=str, action='store', default='  ', metavar='tongue_string', help="select the appearance of the cow's tongue")
     parser.add_argument('-W', type=int, action='store', default=40, metavar='column', help='column where the message should be wrapped')
 
+    for mode, descr in cow_modes().items():
+        parser.add_argument(f'-{mode}', action='append_const', dest='mode', const=mode, help='mode: ' + descr)
+
     args = parser.parse_args()
+
     emulate_cow(args)
 

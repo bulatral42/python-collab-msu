@@ -1,5 +1,5 @@
 from collections import defaultdict
-
+import random
 
 
 
@@ -22,9 +22,31 @@ def bullscows(guess: str, secret: str) -> (int, int):
     return bulls, cows
 
 
+def gameplay(ask: callable, inform: callable, words: list[str]) -> int:
+    secret = random.choice(words)
+    n_attempts = 0
+    while True:
+        guess = ask("Введите слово: ", words)
+        n_attempts += 1
+        bulls, cows = bullscows(guess, secret)
+        inform("Быки {}, Коровы {}", bulls, cows)
+        if guess == secret:
+            break
+    return n_attempts
+
+def ask(prompt: str, valid: list[str] = None) -> str:
+    word = input(prompt)
+    if not valid:
+        while not word in valid:
+            word = input(prompt)
+    return word
+
+def inform(format_string: str, bulls: int, cows: int) -> None:
+    print(format_string.format(bulls, cows))
+
+
 
 if __name__ == "__main__":
-    print(bullscows('мама', 'папа'))
-    print(bullscows('человек', 'ччччччч'))
-    print(bullscows('привет', 'тевирп'))
+    words = ['bull', 'cow', 'milk', 'grass', 'water']
+    gameplay(ask, inform, words)
 

@@ -48,5 +48,5 @@ def inform(format_string: str, bulls: int, cows: int) -> None:
 
 if __name__ == "__main__":
     words = ['bull', 'cow', 'milk', 'grass', 'water']
-    gameplay(ask, inform, words)
-
+    n_attempts = gameplay(ask, inform, words)
+    print(f"Успех... Вы угадали слово за всего лишь {n_attempts} попыток")

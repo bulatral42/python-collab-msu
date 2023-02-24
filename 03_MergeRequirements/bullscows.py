@@ -1,6 +1,8 @@
 from collections import defaultdict
 import random
-
+from argparse import ArgumentParser
+from urllib.request import urlretrieve
+import os
 
 
 def bullscows(guess: str, secret: str) -> (int, int):
@@ -36,7 +38,7 @@ def gameplay(ask: callable, inform: callable, words: list[str]) -> int:
 
 def ask(prompt: str, valid: list[str] = None) -> str:
     word = input(prompt)
-    if not valid:
+    if valid:
         while not word in valid:
             word = input(prompt)
     return word
@@ -47,6 +49,26 @@ def inform(format_string: str, bulls: int, cows: int) -> None:
 
 
 if __name__ == "__main__":
-    words = ['bull', 'cow', 'milk', 'grass', 'water']
-    n_attempts = gameplay(ask, inform, words)
-    print(f"Успех... Вы угадали слово за всего лишь {n_attempts} попыток")
+    parser = ArgumentParser(prog='bulls-cows', description="A word guessing game called 'bulls and cows'")
+    parser.add_argument('dictionary', type=str, action='store', help='filename or URL of words that can be used')
+    parser.add_argument('length', type=int, action='store', nargs='?', default=5, help='length of used words')
+
+    args = parser.parse_args()
+
+    if os.path.exists(args.dictionary):
+        fname = args.dictionary
+    else:
+        fname, _ = urlretrieve(args.dictionary)
+
+    words = []
+    with open(fname, 'r') as f:
+        for line in f.readlines():
+            line = line.strip()
+            if len(line) == args.length:
+                words.append(line)
+
+    if len(words) == 0:
+        print('В словаре нет слов заданной длины :(')
+    else:
+        n_attempts = gameplay(ask, inform, words)
+        print(f"Успех... Вы угадали слово...\nКоличество использованных попыток: всего лишь {n_attempts}")

@@ -3,6 +3,7 @@ import random
 from argparse import ArgumentParser
 from urllib.request import urlretrieve
 import os
+from cowsay import cowsay, get_random_cow
 
 
 def bullscows(guess: str, secret: str) -> (int, int):
@@ -37,15 +38,16 @@ def gameplay(ask: callable, inform: callable, words: list[str]) -> int:
     return n_attempts
 
 def ask(prompt: str, valid: list[str] = None) -> str:
-    word = input(prompt)
+    cow = get_random_cow()
+    word = input(cowsay(prompt, cow=cow))
     if valid:
         while not word in valid:
-            word = input(prompt)
+            word = input(cowsay(prompt, cow=cow))
     return word
 
 def inform(format_string: str, bulls: int, cows: int) -> None:
-    print(format_string.format(bulls, cows))
-
+    cow = get_random_cow()
+    print(cowsay(format_string.format(bulls, cows), cow=cow))
 
 
 if __name__ == "__main__":

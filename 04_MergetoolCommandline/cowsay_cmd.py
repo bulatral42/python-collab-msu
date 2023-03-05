@@ -1,7 +1,25 @@
 import cowsay as cs
 import cmd
 import shlex
-import sys
+
+
+def parse_cowargs(parsed):
+    message = parsed[0]
+    cow, eyes, tongue, cowfile = 'default', 'oo', '  ', None
+    if len(parsed) > 1:
+        if '/' in parsed[1]:
+            cowfile = parsed[1]
+        elif parsed[1] in cs.list_cows():
+            cow = parsed[1]
+        else:
+            print(f'cowsay: Could not find {parsed[1]} cowfile!')
+            return None
+    if len(parsed) > 2:
+        eyes = parsed[2][:2]
+    if len(parsed) > 3:
+        tongue = parsed[3][:2]
+
+    return message, {'cow': cow, 'eyes': eyes, 'tongue': tongue, 'cowfile': cowfile}
 
 
 class CmdCowsay(cmd.Cmd):
@@ -18,14 +36,13 @@ class CmdCowsay(cmd.Cmd):
             print("No text to bubble")
             return
 
-        if len(parsed) > 0:
-            text = parsed[0]
+        text = parsed[0]
 
         if len(parsed) > 1:
             if parsed[1] in ['cowsay', 'cowthink']:
                 brackets = cs.THOUGHT_OPTIONS[parsed[1]]
             else:
-                print("Wrong brackets parameter")
+                print(f"Wrong brackets parameter: {parsed[1]}")
                 return
         else:
             brackets = cs.THOUGHT_OPTIONS['cowsay']
@@ -38,14 +55,32 @@ class CmdCowsay(cmd.Cmd):
         Emulate cowsay command: express cow's words
         cowsay message [cow [eyes [tongue]]]
         '''
-        pass
+        parsed = shlex.split(args)
+        if len(parsed) == 0:
+            print("No message to say")
+            return
+
+        cowargs = parse_cowargs(parsed)
+        if cowargs:
+            print(cs.cowsay(cowargs[0], **cowargs[1]))
+        else:
+            return
+
 
     def do_cowthink(self, args):
         '''
         Emulate cowthink command: express cow's thoughts (similar to cowsay)
-        cowthink message [cow [eyes [tongue]]]
+        cowthink thoughts [cow [eyes [tongue]]]
         '''
-        pass
+        parsed = shlex.split(args)
+        if len(parsed) == 0:
+            print("No thoughts to think")
+            return
+        cowargs = parse_cowargs(parsed)
+        if cowargs:
+            print(cs.cowthink(cowargs[0], **cowargs[1]))
+        else:
+            return
 
     def do_list_cows(self, args):
         '''

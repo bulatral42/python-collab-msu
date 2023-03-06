@@ -26,6 +26,16 @@ class CmdCowsay(cmd.Cmd):
     intro = "Welcome to cow farm!"
     prompt = "moo? "
 
+    make_bubble_variants = {'brackets': ['cowsay', 'cowthink']}
+
+    cowsaythink_variants = {'eyes': ['oo', 'TT', '@@', 'xx', '--', '++'],
+                            'tongue': ['  ', 'U-', 'U ', 'ww', '()', '69'],
+                           }
+
+    def __init__(self):
+        super().__init__()
+        self.cowsaythink_variants['cow'] = cs.list_cows()
+
     def do_make_bubble(self, args):
         '''
         Wraps text into a bubble
@@ -48,6 +58,20 @@ class CmdCowsay(cmd.Cmd):
             brackets = cs.THOUGHT_OPTIONS['cowsay']
 
         print(cs.make_bubble(text, brackets))
+
+    def complete_make_bubble(self, prefix, line, pbegin, pend):
+        args = shlex.split(line)
+        #print(len(args), args)
+        if len(args) < 2:
+            return []
+        if len(args) == 2:
+            if pbegin == pend:
+                return self.make_bubble_variants['brackets']
+            else:
+                return []
+        if len(args) == 3:
+            return [w for w in self.make_bubble_variants['brackets'] if w.startswith(prefix)]
+        return []
 
 
     def do_cowsay(self, args):

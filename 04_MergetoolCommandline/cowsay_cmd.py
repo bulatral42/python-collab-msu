@@ -28,13 +28,38 @@ class CmdCowsay(cmd.Cmd):
 
     make_bubble_variants = {'brackets': ['cowsay', 'cowthink']}
 
-    cowsaythink_variants = {'eyes': ['oo', 'TT', '@@', 'xx', '--', '++'],
-                            'tongue': ['  ', 'U-', 'U ', 'ww', '()', '69'],
-                           }
+    cowsaythink_variants = {
+        'cow': [],
+        'eyes': ['oo', 'TT', 'JL', 'xx', 'SS', 'YY'],
+        'tongue': ['Up', 'Uq', 'qU', 'ww', 'LL', 'TL', 'LT'],
+    }
 
     def __init__(self):
         super().__init__()
         self.cowsaythink_variants['cow'] = cs.list_cows()
+
+    def cowsaythink_complete(self, prefix, line, pbegin, pend):
+        args = shlex.split(line)
+        if len(args) < 2:
+            return []
+        if len(args) == 2:
+            if pbegin < pend:
+                return []
+            else:
+                return self.cowsaythink_variants['cow']
+        if len(args) == 3:
+            if pbegin < pend:
+                return [w for w in self.cowsaythink_variants['cow'] if w.startswith(prefix)]
+            else:
+                return self.cowsaythink_variants['eyes']
+        if len(args) == 4:
+            if pbegin < pend:
+                return [w for w in self.cowsaythink_variants['eyes'] if w.startswith(prefix)]
+            else:
+                return self.cowsaythink_variants['tongue']
+        if len(args) == 5 and pbegin < pend:
+            return [w for w in self.cowsaythink_variants['tongue'] if w.startswith(prefix)]
+        return []
 
     def do_make_bubble(self, args):
         '''
@@ -61,15 +86,14 @@ class CmdCowsay(cmd.Cmd):
 
     def complete_make_bubble(self, prefix, line, pbegin, pend):
         args = shlex.split(line)
-        #print(len(args), args)
         if len(args) < 2:
             return []
         if len(args) == 2:
-            if pbegin == pend:
-                return self.make_bubble_variants['brackets']
-            else:
+            if pbegin < pend:
                 return []
-        if len(args) == 3:
+            else:
+                return self.make_bubble_variants['brackets']
+        if len(args) == 3 and pbegin < pend:
             return [w for w in self.make_bubble_variants['brackets'] if w.startswith(prefix)]
         return []
 
@@ -90,6 +114,8 @@ class CmdCowsay(cmd.Cmd):
         else:
             return
 
+    def complete_cowsay(self, prefix, line, pbegin, pend):
+        return self.cowsaythink_complete(prefix, line, pbegin, pend)
 
     def do_cowthink(self, args):
         '''
@@ -106,6 +132,9 @@ class CmdCowsay(cmd.Cmd):
         else:
             return
 
+    def complete_cowthink(self, prefix, line, pbegin, pend):
+        return self.cowsaythink_complete(prefix, line, pbegin, pend)
+
     def do_list_cows(self, args):
         '''
         Lists all cow file names in the given or default directory
@@ -116,8 +145,6 @@ class CmdCowsay(cmd.Cmd):
             print(*cs.list_cows(parsed[0]))
         else:
             print(*cs.list_cows())
-
-
 
     def do_exit(self, args):
         '''

@@ -36,6 +36,8 @@ class CowUser:
         return self._name
 
     def login(self, name):
+        if name == self._name or not self._name is None:
+            return True
         if name in free_names:
             free_names.remove(name)
             used_names.add(name)
@@ -47,12 +49,14 @@ class CowUser:
         return not self._name is None
 
     async def who(self):
-        await self._q.put(f"{repr(used_names)}")
+        await self._q.put(f"{repr(sorted(list(used_names)))}")
 
     async def cows(self):
-        await self._q.put(f"{repr(list(free_names))}")
+        await self._q.put(f"{repr(sorted(list(free_names)))}")
 
     async def quit(self):
+        used_names.remove(self._name)
+        free_names.add(self._name)
         self._name = None
         print(f"User#{self._id} (quit)")
 
@@ -81,16 +85,26 @@ async def chat(reader, writer):
                         await me.cows()
                     case ['quit']:
                         await me.quit()
+                        receive.cancel()
                         send.cancel()
                         del clients[me.id()]
                         writer.close()
                         await writer.wait_closed()
-                        break
+                        return
+                    case ['login', name]:
+                        me.login(name)
             elif task is receive:
                 receive = asyncio.create_task(me._q.get())
 
                 writer.write(f"{task.result()}\n".encode())
                 await writer.drain()
+
+    await me.quit()
+    receive.cancel()
+    send.cancel()
+    del clients[me.id()]
+    writer.close()
+    await writer.wait_closed()
 
 
 async def main():

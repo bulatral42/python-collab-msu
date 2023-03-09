@@ -35,14 +35,17 @@ class CowUser:
     def name(self):
         return self._name
 
-    def login(self, name):
+    async def login(self, name):
         if name == self._name or not self._name is None:
-            return True
+            await self._q.put("You can't relog in, please quit before")
         if name in free_names:
             free_names.remove(name)
             used_names.add(name)
             self._name = name
+            await self._q.put(f"Welcome to Cow Chat, {self._name}!")
             print(f"User#{self._id} (logged in as) {self._name}")
+        else:
+            await self._q.put("Name is reserved, choose another")
         return not self._name is None
 
     def is_logged_in(self):
@@ -62,28 +65,31 @@ class CowUser:
 
     async def share(self, text):
         if not self.is_logged_in():
-            return False
+            await self._q.put("You can't chat befor logging in")
+            return
         for user in clients.values():
             if user.id() != self._id and user.is_logged_in():
                 await user._q.put(f"{self._name} (to all): {text}")
         return True
 
     async def say(self, to, text):
-        if not self.is_logged_in() or self._name == to:
-            return False
+        if not self.is_logged_in():
+            await self._q.put("You can't chat befor logging in")
         for user in clients.values():
             if user.name() == to and user.is_logged_in():
                 await user._q.put(f"{self._name}: {text}")
+
+    def receive_task(self):
+        return asyncio.create_task(self._q.get())
 
 
 async def chat(reader, writer):
     ip, port = writer.get_extra_info('peername')
     me = CowUser(ip, port)
     clients[me.id()] = me
-    me.login(next(iter(free_names)))
 
     send = asyncio.create_task(reader.readline())
-    receive = asyncio.create_task(me._q.get())
+    receive = me.receive_task()
     while not reader.at_eof():
         done, pending = await asyncio.wait([send, receive], return_when=asyncio.FIRST_COMPLETED)
         for task in done:
@@ -105,14 +111,13 @@ async def chat(reader, writer):
                         await writer.wait_closed()
                         return
                     case ['login', name]:
-                        me.login(name)
+                        await me.login(name)
                     case ['yield', text]:
                         await me.share(text)
                     case ['say', to, text]:
                         await me.say(to, text)
             elif task is receive:
-                receive = asyncio.create_task(me._q.get())
-
+                receive = me.receive_task()
                 writer.write(f"{task.result()}\n".encode())
                 await writer.drain()
 

@@ -60,7 +60,20 @@ class CowUser:
         self._name = None
         print(f"User#{self._id} (quit)")
 
+    async def share(self, text):
+        if not self.is_logged_in():
+            return False
+        for user in clients.values():
+            if user.id() != self._id and user.is_logged_in():
+                await user._q.put(f"{self._name} (to all): {text}")
+        return True
 
+    async def say(self, to, text):
+        if not self.is_logged_in() or self._name == to:
+            return False
+        for user in clients.values():
+            if user.name() == to and user.is_logged_in():
+                await user._q.put(f"{self._name}: {text}")
 
 
 async def chat(reader, writer):
@@ -93,6 +106,10 @@ async def chat(reader, writer):
                         return
                     case ['login', name]:
                         me.login(name)
+                    case ['yield', text]:
+                        await me.share(text)
+                    case ['say', to, text]:
+                        await me.say(to, text)
             elif task is receive:
                 receive = asyncio.create_task(me._q.get())
 

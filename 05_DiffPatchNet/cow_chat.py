@@ -44,8 +44,10 @@ class CowUser:
             self._name = name
             await self._q.put(f"Welcome to Cow Chat, {self._name}!")
             print(f"User#{self._id} (logged in as) {self._name}")
-        else:
+        elif name in used_names:
             await self._q.put("Name is reserved, choose another")
+        else:
+            await self._q.put("Name is not cowish, choose true cowish name! You may use cows command")
         return not self._name is None
 
     def is_logged_in(self):
@@ -68,7 +70,7 @@ class CowUser:
             await self._q.put("You can't chat befor logging in")
             return
         for user in clients.values():
-            if user.id() != self._id and user.is_logged_in():
+            if user.is_logged_in():
                 await user._q.put(f"{self._name} (to all): {text}")
         return True
 

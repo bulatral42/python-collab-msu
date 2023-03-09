@@ -1,6 +1,7 @@
 import asyncio
 import cowsay as cs
 import shlex
+from io import StringIO
 
 
 clients = {}
@@ -14,6 +15,20 @@ class CowUser:
     _port = None
     _name = None
     _q = None
+    _notif_cow = cow = cs.read_dot_cow(StringIO("""
+    $the_cow = <<EOC;
+      $thoughts
+          $thoughts
+            P^P
+           (+ +)
+          ( >*< )
+            [Y]
+       ( ......... )
+        ( _______ )
+            L  L
+    EOC
+    """))
+
 
     def __init__(self, ip, port, name = None):
         self._id = f"{ip}:{port}"
@@ -22,6 +37,9 @@ class CowUser:
         self._name = name
         self._q = asyncio.Queue()
         print(f"User#{self._id} (connected)")
+
+    async def report(self, message):
+        await self._q.put(cs.cowsay(message, cowfile=self._notif_cow))
 
     def id(self):
         return self._id
@@ -37,27 +55,27 @@ class CowUser:
 
     async def login(self, name):
         if name == self._name or not self._name is None:
-            await self._q.put("You can't relog in, please quit before")
+            await self.report("You can't relog in, please quit before")
         if name in free_names:
             free_names.remove(name)
             used_names.add(name)
             self._name = name
-            await self._q.put(f"Welcome to Cow Chat, {self._name}!")
+            await self.report(f"Welcome to Cow Chat, {self._name}!")
             print(f"User#{self._id} (logged in as) {self._name}")
         elif name in used_names:
-            await self._q.put("Name is reserved, choose another")
+            await self.report("Name is reserved, choose another")
         else:
-            await self._q.put("Name is not cowish, choose true cowish name! You may use cows command")
+            await self.report("Name is not cowish, choose true cowish name! You may use cows command")
         return not self._name is None
 
     def is_logged_in(self):
         return not self._name is None
 
     async def who(self):
-        await self._q.put(f"{repr(sorted(list(used_names)))}")
+        await self.report(' '.join(name for name in sorted(list(used_names))))
 
     async def cows(self):
-        await self._q.put(f"{repr(sorted(list(free_names)))}")
+        await self.report(' '.join(name for name in sorted(list(free_names))))
 
     async def quit(self):
         used_names.remove(self._name)
@@ -65,21 +83,24 @@ class CowUser:
         self._name = None
         print(f"User#{self._id} (quit)")
 
+    def cow_message(self, message):
+        return cs.cowsay(message, cow=self._name)
+
     async def share(self, text):
         if not self.is_logged_in():
-            await self._q.put("You can't chat befor logging in")
+            await self.report("You can't chat befor logging in")
             return
         for user in clients.values():
             if user.is_logged_in():
-                await user._q.put(f"{self._name} (to all): {text}")
+                await user._q.put(self.cow_message(f"{self._name} (to all): {text}"))
         return True
 
     async def say(self, to, text):
         if not self.is_logged_in():
-            await self._q.put("You can't chat befor logging in")
+            await self.report("You can't chat befor logging in")
         for user in clients.values():
             if user.name() == to and user.is_logged_in():
-                await user._q.put(f"{self._name}: {text}")
+                await user._q.put(self.cow_message(f"{self._name}: {text}"))
 
     def receive_task(self):
         return asyncio.create_task(self._q.get())

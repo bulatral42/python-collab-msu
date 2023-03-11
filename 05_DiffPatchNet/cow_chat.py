@@ -119,7 +119,9 @@ async def chat(reader, writer):
         for task in done:
             if task is send:
                 send = asyncio.create_task(reader.readline())
-
+                got = task.result().decode()
+                if len(got.strip()):
+                    print(f'User#{me.id()}: {got.strip()}')
                 parsed = shlex.split(task.result().decode())
                 match parsed:
                     case ['who']:
@@ -140,6 +142,8 @@ async def chat(reader, writer):
                         await me.share(text)
                     case ['say', to, text]:
                         await me.say(to, text)
+                    case [word]:
+                        await me.report(f'Unknow command: {word}')
             elif task is receive:
                 receive = me.receive_task()
                 writer.write(f"{task.result()}\n".encode())

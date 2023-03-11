@@ -73,10 +73,10 @@ class CowUser:
         return not self._name is None
 
     async def who(self):
-        await self.report(' '.join(name for name in sorted(list(used_names))))
+        await self.report(', '.join(name for name in sorted(list(used_names))))
 
     async def cows(self):
-        await self.report(' '.join(name for name in sorted(list(free_names))))
+        await self.report(', '.join(name for name in sorted(list(free_names))))
 
     async def quit(self):
         if self.is_logged_in():
@@ -103,6 +103,8 @@ class CowUser:
         for user in clients.values():
             if user.name() == to and user.is_logged_in():
                 await user._q.put(self.cow_message(f"{self._name}: {text}"))
+                return
+        await self.report("No cow with such name")
 
     def receive_task(self):
         return asyncio.create_task(self._q.get())
@@ -139,12 +141,18 @@ async def chat(reader, writer):
                         return
                     case ['login', name]:
                         await me.login(name)
+                    case ['login']:
+                        await me.report('Specify name to login')
                     case ['yield', text]:
                         await me.share(text)
+                    case ['yield']:
+                        await me.report('No message to yield')
                     case ['say', to, text]:
                         await me.say(to, text)
-                    case [word]:
-                        await me.report(f'Unknow command: {word}')
+                    case ['say', to]:
+                        await me.report('No message to say or cow name is missing')
+                    case [*_]:
+                        await me.report(f'Unknow command: {task.result().decode()}')
             elif task is receive:
                 receive = me.receive_task()
                 writer.write(f"{task.result()}\n".encode())

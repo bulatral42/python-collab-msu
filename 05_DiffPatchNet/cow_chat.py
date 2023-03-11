@@ -78,9 +78,10 @@ class CowUser:
         await self.report(' '.join(name for name in sorted(list(free_names))))
 
     async def quit(self):
-        used_names.remove(self._name)
-        free_names.add(self._name)
-        self._name = None
+        if self.is_logged_in():
+            used_names.remove(self._name)
+            free_names.add(self._name)
+            self._name = None
         print(f"User#{self._id} (quit)")
 
     def cow_message(self, message):

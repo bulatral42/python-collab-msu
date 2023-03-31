@@ -29,23 +29,25 @@ class CowSpeaker(cmd.Cmd):
         self._sock.setblocking(False)
         print('connected', flush=True)
 
-    def send_msg(self, msg):
-        self._sock.send(msg.encode())
-
-    def send_cmd(self, cmd):
-        self._sock.send(('CMD ' + msg).encode())
+    def send(self, msg, is_cmd=False):
+        to_send = msg
+        if is_cmd:
+            to_send = 'CMD ' + to_send
+        self._sock.send(to_send.encode())
 
     def recv_msg(self, tmt):
         ready_to_read, _, _ = select.select([self._sock], [], [], tmt)
         for s in ready_to_read:
             msg = s.recv(MAX_MSG_SIZE).decode()
+            msg = msg.strip()
             if msg.startswith('CMD '):
                 msg = msg[4:]
                 with self._lock:
                     self._cmd_buf.append(msg)
-                print(f"\nCMD ANS: {msg}\n{self.prompt}{readline.get_line_buffer()}", end="", flush=True)
+                print(f"CMD ANS: {msg}\n{self.prompt}{readline.get_line_buffer()}", end="", flush=True)
             else:
-                print(f"\n{msg}\n{self.prompt}{self.get_line_buffer()}", end="", flush=True)
+                msg = msg.replace('\t', '\n')
+                print(f"\n{msg}\n{self.prompt}{readline.get_line_buffer()}", end="", flush=True)
 
     def do_who(self, args):
         self.send('who\n')
@@ -54,7 +56,7 @@ class CowSpeaker(cmd.Cmd):
         self.send('cows\n')
 
     def do_login(self, args):
-        parsed = shlex.parse(args)
+        parsed = shlex.split(args)
         name = parsed[0] if len(parsed) > 0 else ''
         self.send(f'login {name}\n')
         self._online = True
@@ -63,7 +65,7 @@ class CowSpeaker(cmd.Cmd):
         pass
 
     def do_say(self, args):
-        parsed = shlex.parse(args)
+        parsed = shlex.split(args)
         if len(parsed) < 2:
             parsed += ['', '']
         name, msg = parsed[:2]
@@ -73,7 +75,7 @@ class CowSpeaker(cmd.Cmd):
         pass
 
     def do_yield(self, args):
-        parsed = shlex.parse(args)
+        parsed = shlex.split(args)
         if len(parsed) < 1:
             parsed.append('')
         msg = parsed[0]
@@ -87,7 +89,7 @@ class CowSpeaker(cmd.Cmd):
         return self._online
 
     def receiver(self):
-        while self._online:
+        while True:
             self.recv_msg(0.0)
 
 

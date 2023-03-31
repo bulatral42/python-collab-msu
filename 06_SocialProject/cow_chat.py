@@ -61,7 +61,7 @@ class CowUser:
     async def login(self, name):
         if name == self._name or not self._name is None:
             await self.report("You can't relog in, please quit before")
-        if name in free_names:
+        elif name in free_names:
             free_names.remove(name)
             used_names.add(name)
             self._name = name
